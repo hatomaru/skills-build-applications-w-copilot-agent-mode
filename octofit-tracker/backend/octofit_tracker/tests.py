@@ -1,29 +1,50 @@
 from django.test import TestCase
+from rest_framework.test import APIClient
+from rest_framework import status
 from .models import User, Team, Activity, Leaderboard, Workout
 
-class UserModelTest(TestCase):
-    def test_create_user(self):
-        user = User.objects.create(username="testuser", email="testuser@example.com", password="password123")
-        self.assertEqual(user.username, "testuser")
+class OctofitTrackerTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create(username='testuser', email='testuser@example.com', password='password')
 
-class TeamModelTest(TestCase):
-    def test_create_team(self):
-        team = Team.objects.create(name="Test Team")
-        self.assertEqual(team.name, "Test Team")
+    def test_user_creation(self):
+        response = self.client.post('/api/users/', {
+            'username': 'newuser',
+            'email': 'newuser@example.com',
+            'password': 'newpassword'
+        })
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-class ActivityModelTest(TestCase):
-    def test_create_activity(self):
-        user = User.objects.create(username="testuser", email="testuser@example.com", password="password123")
-        activity = Activity.objects.create(user=user, activity_type="Running", duration="01:00:00")
-        self.assertEqual(activity.activity_type, "Running")
+    def test_get_users(self):
+        response = self.client.get('/api/users/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-class LeaderboardModelTest(TestCase):
-    def test_create_leaderboard_entry(self):
-        user = User.objects.create(username="testuser", email="testuser@example.com", password="password123")
-        leaderboard = Leaderboard.objects.create(user=user, score=100)
-        self.assertEqual(leaderboard.score, 100)
+    def test_team_creation(self):
+        response = self.client.post('/api/teams/', {
+            'name': 'Test Team',
+            'members': [self.user.id]
+        })
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-class WorkoutModelTest(TestCase):
-    def test_create_workout(self):
-        workout = Workout.objects.create(name="Test Workout", description="Test Description")
-        self.assertEqual(workout.name, "Test Workout")
+    def test_activity_creation(self):
+        response = self.client.post('/api/activities/', {
+            'user': self.user.id,
+            'activity_type': 'Running',
+            'duration': '01:00:00'
+        })
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_leaderboard_creation(self):
+        response = self.client.post('/api/leaderboard/', {
+            'user': self.user.id,
+            'score': 100
+        })
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_workout_creation(self):
+        response = self.client.post('/api/workouts/', {
+            'name': 'Test Workout',
+            'description': 'This is a test workout.'
+        })
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
